@@ -389,9 +389,13 @@ To add new features, extend the appropriate service or create a new one in the `
 
     Add this configuration:
     ```nginx
+    # HTTP - Will redirect to HTTPS after Certbot configuration
     server {
         listen 80;
         server_name your-domain.com;
+        
+        # This section will redirect all HTTP traffic to HTTPS
+        # (Certbot will add this automatically when you run it)
         
         location /api/slack/ {
             proxy_pass http://localhost:3000;
@@ -400,8 +404,33 @@ To add new features, extend the appropriate service or create a new one in the `
             proxy_set_header Connection 'upgrade';
             proxy_set_header Host $host;
             proxy_cache_bypass $http_upgrade;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
         }
     }
+    
+    # HTTPS - Certbot will add SSL configuration here
+    # After running Certbot, your config will include both port 80 and 443 sections
+    # This is just a reference - Certbot will modify your config automatically
+    # server {
+    #     listen 443 ssl;
+    #     server_name your-domain.com;
+    #     
+    #     # SSL certificate configuration (added by Certbot)
+    #     
+    #     location /api/slack/ {
+    #         proxy_pass http://localhost:3000;
+    #         proxy_http_version 1.1;
+    #         proxy_set_header Upgrade $http_upgrade;
+    #         proxy_set_header Connection 'upgrade';
+    #         proxy_set_header Host $host;
+    #         proxy_cache_bypass $http_upgrade;
+    #         proxy_set_header X-Real-IP $remote_addr;
+    #         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #         proxy_set_header X-Forwarded-Proto $scheme;
+    #     }
+    # }
     ```
 
     ```bash
