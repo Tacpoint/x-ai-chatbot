@@ -301,6 +301,169 @@ src/
 
 To add new features, extend the appropriate service or create a new one in the `services` directory.
 
+## Deployment
+
+### Deploying to Amazon EC2 (Amazon Linux)
+
+1. **Connect to your EC2 instance**:
+   ```bash
+   ssh -i your-key.pem ec2-user@your-ec2-public-dns
+   ```
+
+2. **Update the system**:
+   ```bash
+   sudo yum update -y
+   ```
+
+3. **Install Node.js and npm**:
+   ```bash
+   # Install Node.js 18 (or your preferred version)
+   curl -fsSL https://rpm.nodesource.com/setup_18.x | sudo bash -
+   sudo yum install -y nodejs
+   
+   # Verify installation
+   node -v
+   npm -v
+   ```
+
+4. **Install Git**:
+   ```bash
+   sudo yum install -y git
+   ```
+
+5. **Install additional dependencies**:
+   ```bash
+   # Install development tools (needed for some npm packages)
+   sudo yum groupinstall "Development Tools" -y
+   ```
+
+6. **Clone your repository**:
+   ```bash
+   git clone https://github.com/yourusername/x_ai_chatbot.git
+   cd x_ai_chatbot
+   ```
+
+7. **Install project dependencies**:
+   ```bash
+   npm install
+   ```
+
+8. **Set up environment variables**:
+   ```bash
+   cp .env.example .env
+   nano .env  # Edit with your actual API keys and settings
+   ```
+
+9. **Build the TypeScript project**:
+   ```bash
+   npm run build
+   ```
+
+10. **Set up a process manager (PM2)**:
+    ```bash
+    # Install PM2 globally
+    sudo npm install -g pm2
+    
+    # Start your application
+    pm2 start dist/index.js --name x-chatbot -- start
+    
+    # Configure PM2 to start on system boot
+    pm2 startup
+    # Run the command PM2 outputs
+    
+    # Save the current PM2 configuration
+    pm2 save
+    ```
+
+11. **Set up reverse proxy with nginx (if needed for webhooks)**:
+    ```bash
+    # Install nginx
+    sudo amazon-linux-extras install nginx1
+    sudo systemctl start nginx
+    sudo systemctl enable nginx
+    
+    # Configure nginx
+    sudo nano /etc/nginx/conf.d/x-chatbot.conf
+    ```
+
+    Add this configuration:
+    ```nginx
+    server {
+        listen 80;
+        server_name your-domain.com;
+        
+        location /api/slack/ {
+            proxy_pass http://localhost:3000;
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+    ```
+
+    ```bash
+    # Test and reload nginx
+    sudo nginx -t
+    sudo systemctl reload nginx
+    ```
+
+12. **Set up SSL with Certbot** (required for Slack webhooks):
+    ```bash
+    # Install Certbot
+    sudo amazon-linux-extras install epel -y
+    sudo yum install -y certbot python-certbot-nginx
+    
+    # Get SSL certificate
+    sudo certbot --nginx -d your-domain.com
+    
+    # Automatic renewal
+    sudo certbot renew --dry-run
+    ```
+
+13. **Test your deployment**:
+    ```bash
+    # Check the application logs
+    pm2 logs x-chatbot
+    
+    # Test creating a post
+    cd x_ai_chatbot
+    npm run post -- --topic "Test from EC2"
+    ```
+
+14. **Monitor your application**:
+    ```bash
+    pm2 monit
+    ```
+
+### Troubleshooting EC2 Deployment
+
+1. **Check logs**:
+   ```bash
+   pm2 logs x-chatbot
+   ```
+
+2. **Verify ports are open** in EC2 Security Group:
+   - Port 80 (HTTP)
+   - Port 443 (HTTPS)
+   - Port 3000 (Application)
+
+3. **Check if the application is running**:
+   ```bash
+   pm2 list
+   ```
+
+4. **Restart the application**:
+   ```bash
+   pm2 restart x-chatbot
+   ```
+
+5. **Check system resources**:
+   ```bash
+   htop  # You may need to install it: sudo yum install htop
+   ```
+
 ## License
 
 ISC
