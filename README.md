@@ -379,10 +379,18 @@ To add new features, extend the appropriate service or create a new one in the `
     ```bash
     # Install nginx
     sudo yum install -y nginx
+    # or for Amazon Linux 2023
+    sudo dnf install -y nginx
+    
     sudo systemctl start nginx
     sudo systemctl enable nginx
     
-    # Configure nginx
+    # Fix nginx config if you have a long domain name
+    sudo nano /etc/nginx/nginx.conf
+    # Add this line inside the http block:
+    # server_names_hash_bucket_size 128;
+    
+    # Configure nginx for your application
     sudo mkdir -p /etc/nginx/conf.d/
     sudo nano /etc/nginx/conf.d/x-chatbot.conf
     ```
@@ -441,14 +449,20 @@ To add new features, extend the appropriate service or create a new one in the `
 
 12. **Set up SSL with Certbot** (required for Slack webhooks):
     ```bash
-    # Install EPEL repository first
-    sudo yum install -y epel-release
+    # For Amazon Linux 2023, install Certbot via snapd:
     
-    # If that doesn't work (for Amazon Linux 2023), use this instead:
-    sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    # Install snapd
+    sudo dnf install -y snapd
     
-    # Install Certbot
-    sudo yum install -y certbot python3-certbot-nginx
+    # Enable snapd service
+    sudo systemctl enable --now snapd.socket
+    sudo ln -s /var/lib/snapd/snap /snap
+    
+    # Install certbot via snap
+    sudo snap install core
+    sudo snap refresh core
+    sudo snap install --classic certbot
+    sudo ln -s /snap/bin/certbot /usr/bin/certbot
     
     # Get SSL certificate
     sudo certbot --nginx -d your-domain.com
