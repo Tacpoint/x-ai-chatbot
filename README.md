@@ -439,7 +439,78 @@ To add new features, extend the appropriate service or create a new one in the `
 
 ### Troubleshooting EC2 Deployment
 
-1. **Check logs**:
+#### Common npm install Errors
+
+1. **Python/node-gyp errors**:
+   ```bash
+   # Install Python and required build tools
+   sudo yum install -y python3 gcc gcc-c++ make
+   
+   # If you need Python 2 for older packages
+   sudo yum install -y python2
+   
+   # Set Python version for npm
+   npm config set python python3
+   ```
+
+2. **Permission errors**:
+   ```bash
+   # Fix ownership issues
+   sudo chown -R $(whoami) ~/.npm
+   sudo chown -R $(whoami) ./node_modules
+   
+   # Or run with sudo (not recommended for production)
+   sudo npm install
+   ```
+
+3. **Memory issues** (for t2.micro instances):
+   ```bash
+   # Create a swap file
+   sudo dd if=/dev/zero of=/swapfile bs=1M count=1024
+   sudo chmod 600 /swapfile
+   sudo mkswap /swapfile
+   sudo swapon /swapfile
+   
+   # To make swap permanent, add to /etc/fstab
+   echo '/swapfile swap swap defaults 0 0' | sudo tee -a /etc/fstab
+   
+   # Install with reduced memory usage
+   npm install --no-optional
+   # Or
+   NODE_OPTIONS=--max_old_space_size=512 npm install
+   ```
+
+4. **Package version conflicts**:
+   ```bash
+   # Clear npm cache
+   npm cache clean --force
+   
+   # Try installing with --force
+   npm install --force
+   
+   # Or use a specific Node.js version
+   # Install nvm first
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.1/install.sh | bash
+   # Source nvm
+   export NVM_DIR="$HOME/.nvm"
+   [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+   # Install and use Node 16
+   nvm install 16
+   nvm use 16
+   ```
+
+5. **Network/proxy issues**:
+   ```bash
+   # Check if npm can reach the registry
+   npm ping
+   
+   # Configure npm to use a different registry if needed
+   npm config set registry https://registry.npmjs.org/
+   ```
+
+#### General Troubleshooting
+
+1. **Check application logs**:
    ```bash
    pm2 logs x-chatbot
    ```
@@ -462,6 +533,12 @@ To add new features, extend the appropriate service or create a new one in the `
 5. **Check system resources**:
    ```bash
    htop  # You may need to install it: sudo yum install htop
+   ```
+
+6. **Check for disk space issues**:
+   ```bash
+   df -h
+   du -sh ./node_modules
    ```
 
 ## License
