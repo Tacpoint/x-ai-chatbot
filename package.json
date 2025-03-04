@@ -28,18 +28,26 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/body-parser": "^1.19.5",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.13.9",
     "@types/node-cron": "^3.0.11",
+    "@types/uuid": "^10.0.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
   },
   "dependencies": {
+    "@slack/web-api": "^7.8.0",
+    "@slack/webhook": "^7.0.4",
     "@types/yargs": "^17.0.33",
     "axios": "^1.8.1",
+    "body-parser": "^1.20.3",
     "dotenv": "^16.4.7",
+    "express": "^4.21.2",
     "node-cron": "^3.0.3",
     "openai": "^4.86.1",
     "twitter-api-v2": "^1.20.2",
+    "uuid": "^11.1.0",
     "yargs": "^17.7.2"
   }
 }

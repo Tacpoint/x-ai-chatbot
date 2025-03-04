@@ -4,6 +4,8 @@ export interface Post {
   media?: Media[];
   poll?: Poll;
   createdAt: Date;
+  status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'published';
+  approvalId?: string;
 }
 
 export interface Reply {
