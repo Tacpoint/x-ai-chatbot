@@ -1,0 +1,45 @@
+{
+  "name": "x_ai_chatbot",
+  "version": "1.0.0",
+  "description": "AI chatbot that generates content and responds to mentions on X (Twitter)",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "ts-node src/index.ts start",
+    "start": "node dist/index.js start",
+    "post": "ts-node src/index.ts post",
+    "check-mentions": "ts-node src/index.ts check-mentions",
+    "lint": "eslint . --ext .ts",
+    "prepare": "npm run build"
+  },
+  "bin": {
+    "x-chatbot": "./dist/index.js"
+  },
+  "keywords": [
+    "x",
+    "twitter",
+    "chatbot",
+    "ai",
+    "llm",
+    "openai",
+    "grok"
+  ],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^22.13.9",
+    "@types/node-cron": "^3.0.11",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.2"
+  },
+  "dependencies": {
+    "@types/yargs": "^17.0.33",
+    "axios": "^1.8.1",
+    "dotenv": "^16.4.7",
+    "node-cron": "^3.0.3",
+    "openai": "^4.86.1",
+    "twitter-api-v2": "^1.20.2",
+    "yargs": "^17.7.2"
+  }
+}
