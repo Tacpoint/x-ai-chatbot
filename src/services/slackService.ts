@@ -163,7 +163,7 @@ export class SlackService {
 
   async handleApprovalCallback(payload: any): Promise<{
     approvalId: string;
-    status: 'approved' | 'rejected';
+    status: 'approved' | 'rejected' | 'pending';
     content?: {
       text: string;
       media?: Media[];

@@ -2,6 +2,7 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import { SlackService } from './slackService';
 import { XChatbot } from '../core/XChatbot';
+import { Request, Response } from 'express';
 
 export class SlackWebhookServer {
   private app: express.Application;
@@ -25,55 +26,62 @@ export class SlackWebhookServer {
 
   private setupRoutes(): void {
     // Health check endpoint
-    this.app.get('/health', (req, res) => {
-      res.status(200).send('OK');
-    });
+    this.app.get('/health', this.healthCheckHandler.bind(this));
 
     // Slack events webhook endpoint
-    this.app.post('/api/slack/events', (req, res) => {
-      // Verify Slack signature here in a real implementation
-      const payload = req.body;
-      
-      if (payload.type === 'url_verification') {
-        // Respond to Slack's URL verification challenge
-        return res.status(200).send({ challenge: payload.challenge });
-      }
-      
-      // Acknowledge receipt immediately (important for Slack)
-      res.status(200).send();
-      
-      // Process the event asynchronously
-      this.handleSlackEvent(payload).catch(error => {
-        console.error('Error handling Slack event:', error);
-      });
-    });
+    this.app.post('/api/slack/events', this.slackEventsHandler.bind(this));
 
     // Slack interactions webhook endpoint
-    this.app.post('/api/slack/interactions', async (req, res) => {
-      try {
-        // Parse the payload (Slack sends it as a form-encoded string)
-        const payload = JSON.parse(req.body.payload);
-        
-        // Acknowledge receipt immediately
-        res.status(200).send();
-        
-        // Handle the interaction based on its type
-        if (payload.type === 'block_actions') {
-          // Handle button clicks for approval/rejection
-          const result = await this.slackService.handleApprovalCallback(payload);
-          
-          if (result.status === 'approved') {
-            // Post was approved, publish it
-            await this.chatbot.publishApprovedPost(result.approvalId);
-          }
-        } else if (payload.type === 'view_submission') {
-          // Handle form submissions from modals (e.g., edit post)
-          await this.slackService.handleEditSubmission(payload);
-        }
-      } catch (error) {
-        console.error('Error handling Slack interaction:', error);
-      }
+    this.app.post('/api/slack/interactions', this.slackInteractionsHandler.bind(this));
+  }
+
+  private healthCheckHandler(req: Request, res: Response): void {
+    res.status(200).send('OK');
+  }
+
+  private slackEventsHandler(req: Request, res: Response): void {
+    // Verify Slack signature here in a real implementation
+    const payload = req.body;
+    
+    if (payload.type === 'url_verification') {
+      // Respond to Slack's URL verification challenge
+      res.status(200).send({ challenge: payload.challenge });
+      return;
+    }
+    
+    // Acknowledge receipt immediately (important for Slack)
+    res.status(200).send();
+    
+    // Process the event asynchronously
+    this.handleSlackEvent(payload).catch(error => {
+      console.error('Error handling Slack event:', error);
     });
+  }
+
+  private async slackInteractionsHandler(req: Request, res: Response): Promise<void> {
+    try {
+      // Parse the payload (Slack sends it as a form-encoded string)
+      const payload = JSON.parse(req.body.payload);
+      
+      // Acknowledge receipt immediately
+      res.status(200).send();
+      
+      // Handle the interaction based on its type
+      if (payload.type === 'block_actions') {
+        // Handle button clicks for approval/rejection
+        const result = await this.slackService.handleApprovalCallback(payload);
+        
+        if (result.status === 'approved') {
+          // Post was approved, publish it
+          await this.chatbot.publishApprovedPost(result.approvalId);
+        }
+      } else if (payload.type === 'view_submission') {
+        // Handle form submissions from modals (e.g., edit post)
+        await this.slackService.handleEditSubmission(payload);
+      }
+    } catch (error) {
+      console.error('Error handling Slack interaction:', error);
+    }
   }
 
   private async handleSlackEvent(payload: any): Promise<void> {
