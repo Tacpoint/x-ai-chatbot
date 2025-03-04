@@ -378,11 +378,12 @@ To add new features, extend the appropriate service or create a new one in the `
 11. **Set up reverse proxy with nginx (if needed for webhooks)**:
     ```bash
     # Install nginx
-    sudo amazon-linux-extras install nginx1
+    sudo yum install -y nginx
     sudo systemctl start nginx
     sudo systemctl enable nginx
     
     # Configure nginx
+    sudo mkdir -p /etc/nginx/conf.d/
     sudo nano /etc/nginx/conf.d/x-chatbot.conf
     ```
 
@@ -411,9 +412,14 @@ To add new features, extend the appropriate service or create a new one in the `
 
 12. **Set up SSL with Certbot** (required for Slack webhooks):
     ```bash
+    # Install EPEL repository first
+    sudo yum install -y epel-release
+    
+    # If that doesn't work (for Amazon Linux 2023), use this instead:
+    sudo dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-9.noarch.rpm
+    
     # Install Certbot
-    sudo amazon-linux-extras install epel -y
-    sudo yum install -y certbot python-certbot-nginx
+    sudo yum install -y certbot python3-certbot-nginx
     
     # Get SSL certificate
     sudo certbot --nginx -d your-domain.com
