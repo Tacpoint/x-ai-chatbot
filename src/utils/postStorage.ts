@@ -140,11 +140,15 @@ export class PostStorage {
       
       // Convert post.media.data back to Buffer if it exists
       const convertedMedia = post.media?.map(media => {
-        if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
-          return {
-            ...media,
-            data: Buffer.from(media.data.data)
-          };
+        if (media.data && typeof media.data === 'object' && 'type' in media.data) {
+          // Need to handle the serialized Buffer object
+          const bufferData = media.data as unknown as { type: string; data: number[] };
+          if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
+            return {
+              ...media,
+              data: Buffer.from(bufferData.data)
+            };
+          }
         }
         return media;
       });
@@ -175,11 +179,15 @@ export class PostStorage {
       
       // Convert post.media.data back to Buffer if it exists
       const convertedMedia = post.media?.map(media => {
-        if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
-          return {
-            ...media,
-            data: Buffer.from(media.data.data)
-          };
+        if (media.data && typeof media.data === 'object' && 'type' in media.data) {
+          // Need to handle the serialized Buffer object
+          const bufferData = media.data as unknown as { type: string; data: number[] };
+          if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
+            return {
+              ...media,
+              data: Buffer.from(bufferData.data)
+            };
+          }
         }
         return media;
       });
@@ -208,11 +216,15 @@ export class PostStorage {
         .map(p => {
           // Convert post.media.data back to Buffer if it exists
           const convertedMedia = p.media?.map(media => {
-            if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
-              return {
-                ...media,
-                data: Buffer.from(media.data.data)
-              };
+            if (media.data && typeof media.data === 'object' && 'type' in media.data) {
+              // Need to handle the serialized Buffer object
+              const bufferData = media.data as unknown as { type: string; data: number[] };
+              if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
+                return {
+                  ...media,
+                  data: Buffer.from(bufferData.data)
+                };
+              }
             }
             return media;
           });
@@ -242,11 +254,15 @@ export class PostStorage {
         .map(p => {
           // Convert post.media.data back to Buffer if it exists
           const convertedMedia = p.media?.map(media => {
-            if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
-              return {
-                ...media,
-                data: Buffer.from(media.data.data)
-              };
+            if (media.data && typeof media.data === 'object' && 'type' in media.data) {
+              // Need to handle the serialized Buffer object
+              const bufferData = media.data as unknown as { type: string; data: number[] };
+              if (bufferData.type === 'Buffer' && Array.isArray(bufferData.data)) {
+                return {
+                  ...media,
+                  data: Buffer.from(bufferData.data)
+                };
+              }
             }
             return media;
           });
