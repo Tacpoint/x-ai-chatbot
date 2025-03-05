@@ -45,10 +45,13 @@ export class XService {
       if (content.media && content.media.length > 0) {
         for (const media of content.media) {
           if (media.data) {
-            // First upload the media
-            const mediaId = await this.client.v1.uploadMedia(media.data, {
-              mimeType: media.type === 'image' ? 'image/png' : 'video/mp4',
-            });
+            // First upload the media - use Buffer or string path
+            const mediaId = await this.client.v1.uploadMedia(
+              Buffer.isBuffer(media.data) ? media.data.toString('base64') : media.data, 
+              {
+                mimeType: media.type === 'image' ? 'image/png' : 'video/mp4',
+              }
+            );
             
             // Set alt text if provided
             if (media.altText) {
@@ -127,10 +130,13 @@ export class XService {
       if (reply.media && reply.media.length > 0) {
         for (const media of reply.media) {
           if (media.data) {
-            // Upload the media
-            const mediaId = await this.client.v1.uploadMedia(media.data, {
-              mimeType: media.type === 'image' ? 'image/png' : 'video/mp4',
-            });
+            // Upload the media - use Buffer or string path
+            const mediaId = await this.client.v1.uploadMedia(
+              Buffer.isBuffer(media.data) ? media.data.toString('base64') : media.data, 
+              {
+                mimeType: media.type === 'image' ? 'image/png' : 'video/mp4',
+              }
+            );
             
             // Set alt text if provided
             if (media.altText) {
