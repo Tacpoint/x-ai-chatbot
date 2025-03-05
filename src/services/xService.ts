@@ -45,9 +45,19 @@ export class XService {
       if (content.media && content.media.length > 0) {
         for (const media of content.media) {
           if (media.data) {
-            // First upload the media
+            console.log(`Uploading media of type: ${media.type}, buffer length: ${media.data.length}`);
+            
+            // Write the buffer to a temporary file first
+            const tempDir = path.join(os.tmpdir(), 'x_ai_chatbot');
+            await fs.mkdir(tempDir, { recursive: true });
+            const tempFile = path.join(tempDir, `image_${Date.now()}.png`);
+            await fs.writeFile(tempFile, media.data);
+            
+            console.log(`Saved media to temporary file: ${tempFile}`);
+            
+            // Upload the media file
             const mediaId = await this.client.v1.uploadMedia(
-              media.data, 
+              tempFile, 
               {
                 mimeType: media.type === 'image' ? 'image/png' : 'video/mp4',
               }
@@ -130,9 +140,19 @@ export class XService {
       if (reply.media && reply.media.length > 0) {
         for (const media of reply.media) {
           if (media.data) {
-            // Upload the media
+            console.log(`Uploading media for reply, type: ${media.type}, buffer length: ${media.data.length}`);
+            
+            // Write the buffer to a temporary file first
+            const tempDir = path.join(os.tmpdir(), 'x_ai_chatbot');
+            await fs.mkdir(tempDir, { recursive: true });
+            const tempFile = path.join(tempDir, `reply_image_${Date.now()}.png`);
+            await fs.writeFile(tempFile, media.data);
+            
+            console.log(`Saved reply media to temporary file: ${tempFile}`);
+            
+            // Upload the media file
             const mediaId = await this.client.v1.uploadMedia(
-              media.data, 
+              tempFile, 
               {
                 mimeType: media.type === 'image' ? 'image/png' : 'video/mp4',
               }
