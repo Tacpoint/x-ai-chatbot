@@ -45,7 +45,14 @@ export class XService {
       if (content.media && content.media.length > 0) {
         for (const media of content.media) {
           if (media.data) {
-            console.log(`Uploading media of type: ${media.type}, buffer length: ${media.data.length}`);
+            console.log(`Uploading media of type: ${media.type}, buffer: ${media.data ? 'exists' : 'undefined'}`);
+            
+            // Check if we have valid buffer data
+            if (!media.data || !Buffer.isBuffer(media.data)) {
+              console.error(`Invalid media data: ${typeof media.data}, isBuffer: ${Buffer.isBuffer(media.data)}`);
+              console.error(`Media object: ${JSON.stringify({...media, data: media.data ? 'data present' : 'no data'})}`);
+              continue; // Skip this media item
+            }
             
             // Write the buffer to a temporary file first
             const tempDir = path.join(os.tmpdir(), 'x_ai_chatbot');
@@ -140,7 +147,14 @@ export class XService {
       if (reply.media && reply.media.length > 0) {
         for (const media of reply.media) {
           if (media.data) {
-            console.log(`Uploading media for reply, type: ${media.type}, buffer length: ${media.data.length}`);
+            console.log(`Uploading media for reply, type: ${media.type}, buffer: ${media.data ? 'exists' : 'undefined'}`);
+            
+            // Check if we have valid buffer data
+            if (!media.data || !Buffer.isBuffer(media.data)) {
+              console.error(`Invalid reply media data: ${typeof media.data}, isBuffer: ${Buffer.isBuffer(media.data)}`);
+              console.error(`Reply media object: ${JSON.stringify({...media, data: media.data ? 'data present' : 'no data'})}`);
+              continue; // Skip this media item
+            }
             
             // Write the buffer to a temporary file first
             const tempDir = path.join(os.tmpdir(), 'x_ai_chatbot');
