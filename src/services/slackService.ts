@@ -172,17 +172,23 @@ export class SlackService {
             
             const fileExtension = `.${fileType}`;
             
-            // Upload the image to Slack
-            const uploadResult = await this.client.files.upload({
-              channels: config.slack.approvalChannel,
+            // Upload the image to Slack using the recommended uploadV2 method
+            // Cast response to any since the type definitions may not be up to date
+            const uploadResult = await this.client.files.uploadV2({
+              channel_id: config.slack.approvalChannel,
               file: media.data,
               filename: `media_${Date.now()}${fileExtension}`,
-              filetype: fileType,
               title: media.altText || `Post ${media.type}`,
               initial_comment: `Preview of ${media.type} for post approval`
-            });
+            }) as any;
             
-            if (uploadResult.file && uploadResult.file.permalink_public) {
+            // Check for file properties in the response
+            // uploadV2 response has different structure than the old method
+            const fileInfo = uploadResult.files && uploadResult.files[0];
+            if (fileInfo && fileInfo.url_private) {
+              // Log information for debugging
+              console.log(`File uploaded successfully: ${fileInfo.id}, type: ${fileInfo.mimetype}`);
+              
               // For images, add an image block
               if (media.type === 'image' || media.type === 'gif') {
                 blocks.push({
@@ -191,7 +197,7 @@ export class SlackService {
                     type: 'plain_text',
                     text: media.altText || `Post ${media.type}`,
                   },
-                  image_url: uploadResult.file.permalink_public,
+                  image_url: fileInfo.url_private,
                   alt_text: media.altText || `Post ${media.type}`
                 });
               } else {
@@ -200,10 +206,12 @@ export class SlackService {
                   type: 'section',
                   text: {
                     type: 'mrkdwn',
-                    text: `*<${uploadResult.file.permalink_public}|Click to view ${media.type}>*`
+                    text: `*<${fileInfo.permalink}|Click to view ${media.type}>*`
                   }
                 });
               }
+            } else {
+              console.warn('File uploaded but URL not available in response', uploadResult);
             }
           } catch (uploadError) {
             console.error('Error uploading media to Slack:', uploadError);
