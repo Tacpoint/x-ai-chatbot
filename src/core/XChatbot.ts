@@ -112,8 +112,8 @@ export class XChatbot {
         poll: content.poll
       });
       
-      // Request approval via Slack
-      const approvalId = await this.slackService.requestApproval(content);
+      // Request approval via Slack - pass the post ID to maintain ID consistency
+      const approvalId = await this.slackService.requestApproval(content, postId);
       
       // Update the post with the approval ID
       await this.postStorage.updatePostStatus(postId, 'pending', approvalId);
@@ -168,8 +168,8 @@ export class XChatbot {
         poll: content.poll
       });
       
-      // Request approval via Slack
-      const approvalId = await this.slackService.requestApproval(content);
+      // Request approval via Slack - pass the post ID to maintain ID consistency
+      const approvalId = await this.slackService.requestApproval(content, postId);
       
       // Update the post with the approval ID
       await this.postStorage.updatePostStatus(postId, 'pending', approvalId);

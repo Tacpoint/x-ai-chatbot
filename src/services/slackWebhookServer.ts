@@ -68,16 +68,28 @@ export class SlackWebhookServer {
       
       // Handle the interaction based on its type
       if (payload.type === 'block_actions') {
-        // Handle button clicks for approval/rejection
-        const result = await this.slackService.handleApprovalCallback(payload);
-        
-        if (result.status === 'approved') {
-          // Post was approved, publish it
-          await this.chatbot.publishApprovedPost(result.approvalId);
+        try {
+          // Handle button clicks for approval/rejection
+          const result = await this.slackService.handleApprovalCallback(payload);
+          
+          if (result.status === 'approved') {
+            // Post was approved, publish it
+            console.log(`Approval received for ${result.approvalId}, publishing post...`);
+            await this.chatbot.publishApprovedPost(result.approvalId);
+          } else if (result.status === 'rejected') {
+            console.log(`Post with approval ID ${result.approvalId} was rejected`);
+          }
+        } catch (error) {
+          console.error('Error processing approval action:', error);
         }
       } else if (payload.type === 'view_submission') {
-        // Handle form submissions from modals (e.g., edit post)
-        await this.slackService.handleEditSubmission(payload);
+        try {
+          // Handle form submissions from modals (e.g., edit post)
+          const result = await this.slackService.handleEditSubmission(payload);
+          console.log(`Post edited with approval ID ${result.approvalId}`);
+        } catch (error) {
+          console.error('Error processing edit submission:', error);
+        }
       }
     } catch (error) {
       console.error('Error handling Slack interaction:', error);

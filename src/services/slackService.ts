@@ -55,8 +55,9 @@ export class SlackService {
           console.log(`Loading pending approval ${post.approvalId} for post ${post.id}`);
           
           // Convert from Post to DraftPost format
+          // Use the post.id for internal ID to maintain consistency with storage
           this.pendingApprovals.set(post.approvalId, {
-            id: post.approvalId,
+            id: post.id, // Use the post ID here, not approval ID
             content: {
               text: post.text,
               media: post.media,
@@ -90,7 +91,7 @@ export class SlackService {
     text: string;
     media?: Media[];
     poll?: Poll;
-  }): Promise<string> {
+  }, postId?: string): Promise<string> {
     try {
       // Generate a unique ID for this approval request
       const approvalId = uuidv4();
@@ -107,12 +108,14 @@ export class SlackService {
       
       // Store this pending approval
       this.pendingApprovals.set(approvalId, {
-        id: approvalId,
+        id: postId || approvalId, // Use the post ID if provided, otherwise use approval ID
         content: post,
         timestamp: Date.now(),
         status: 'pending',
         messageTs: result.ts as string,
       });
+      
+      console.log(`Created approval request ${approvalId} for post ID: ${postId || 'unknown'}`);
       
       return approvalId;
     } catch (error) {
@@ -234,7 +237,7 @@ export class SlackService {
           console.log(`Found post with approval ID ${approvalId} in storage`);
           // Convert to DraftPost format and add to in-memory store
           post = {
-            id: approvalId,
+            id: storedPost.id, // Use the post ID, not the approval ID
             content: {
               text: storedPost.text,
               media: storedPost.media,
