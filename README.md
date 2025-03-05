@@ -231,6 +231,7 @@ Under "Basic Information":
    - `reactions:write` (Add reactions to messages)
    - `files:write` (Upload files for image previews)
    - `users:read` (View basic user info)
+   - `groups:read` (Access private channels for media uploads)
    - `views:write` (Create and modify modal dialogs)
 
 3. Click "Install to Workspace" and authorize the app
