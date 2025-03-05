@@ -138,10 +138,21 @@ export class PostStorage {
         return null;
       }
       
+      // Convert post.media.data back to Buffer if it exists
+      const convertedMedia = post.media?.map(media => {
+        if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
+          return {
+            ...media,
+            data: Buffer.from(media.data.data)
+          };
+        }
+        return media;
+      });
+      
       return {
         id: post.id,
         text: post.text,
-        media: post.media,
+        media: convertedMedia,
         poll: post.poll,
         createdAt: new Date(post.createdAt),
         status: post.status,
@@ -162,10 +173,21 @@ export class PostStorage {
         return null;
       }
       
+      // Convert post.media.data back to Buffer if it exists
+      const convertedMedia = post.media?.map(media => {
+        if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
+          return {
+            ...media,
+            data: Buffer.from(media.data.data)
+          };
+        }
+        return media;
+      });
+      
       return {
         id: post.id,
         text: post.text,
-        media: post.media,
+        media: convertedMedia,
         poll: post.poll,
         createdAt: new Date(post.createdAt),
         status: post.status,
@@ -183,15 +205,28 @@ export class PostStorage {
       
       return posts
         .filter(p => p.status === 'draft')
-        .map(p => ({
-          id: p.id,
-          text: p.text,
-          media: p.media,
-          poll: p.poll,
-          createdAt: new Date(p.createdAt),
-          status: p.status,
-          approvalId: p.approvalId,
-        }));
+        .map(p => {
+          // Convert post.media.data back to Buffer if it exists
+          const convertedMedia = p.media?.map(media => {
+            if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
+              return {
+                ...media,
+                data: Buffer.from(media.data.data)
+              };
+            }
+            return media;
+          });
+          
+          return {
+            id: p.id,
+            text: p.text,
+            media: convertedMedia,
+            poll: p.poll,
+            createdAt: new Date(p.createdAt),
+            status: p.status,
+            approvalId: p.approvalId,
+          };
+        });
     } catch (error) {
       console.error('Error getting draft posts:', error);
       return [];
@@ -204,15 +239,28 @@ export class PostStorage {
       
       return posts
         .filter(p => p.status === 'pending')
-        .map(p => ({
-          id: p.id,
-          text: p.text,
-          media: p.media,
-          poll: p.poll,
-          createdAt: new Date(p.createdAt),
-          status: p.status,
-          approvalId: p.approvalId,
-        }));
+        .map(p => {
+          // Convert post.media.data back to Buffer if it exists
+          const convertedMedia = p.media?.map(media => {
+            if (media.data && typeof media.data === 'object' && 'type' in media.data && media.data.type === 'Buffer') {
+              return {
+                ...media,
+                data: Buffer.from(media.data.data)
+              };
+            }
+            return media;
+          });
+          
+          return {
+            id: p.id,
+            text: p.text,
+            media: convertedMedia,
+            poll: p.poll,
+            createdAt: new Date(p.createdAt),
+            status: p.status,
+            approvalId: p.approvalId,
+          };
+        });
     } catch (error) {
       console.error('Error getting pending posts:', error);
       return [];
