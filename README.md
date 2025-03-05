@@ -460,8 +460,28 @@ To add new features, extend the appropriate service or create a new one in the `
     # Create symbolic link (may not be necessary if certbot is already in path)
     sudo ln -s /usr/local/bin/certbot /usr/bin/certbot
     
+    # Make sure your nginx configuration has the correct server_name
+    sudo nano /etc/nginx/conf.d/x-chatbot.conf
+    # Ensure it contains: server_name your-domain.com;
+    
+    # Test the configuration
+    sudo nginx -t
+    sudo systemctl reload nginx
+    
+    # Make sure your security group allows HTTP (port 80) and HTTPS (port 443)
+    # This is configured in the AWS EC2 console -> Security Groups
+    
     # Get SSL certificate (replace with your actual domain)
-    sudo certbot --nginx -d your-domain.com
+    sudo certbot --nginx -d your-domain.com --verbose
+    
+    # If the certificate obtains but doesn't install, use:
+    sudo certbot install --cert-name your-domain.com
+    
+    # Verify the certificate installation
+    sudo certbot certificates
+    
+    # Test HTTPS access to your domain in a browser
+    # You should see the secure lock icon
     
     # Automatic renewal test
     sudo certbot renew --dry-run
@@ -469,6 +489,22 @@ To add new features, extend the appropriate service or create a new one in the `
     # Note: You can ignore warnings about dependency conflicts with awscli
     # as long as certbot installs successfully
     ```
+    
+    **Troubleshooting SSL Installation:**
+    
+    1. **Connection timeout errors:**
+       - Ensure AWS EC2 security group allows inbound traffic on ports 80 and 443
+       - Check that your domain's DNS points to your EC2 instance's public IP
+       - Verify nginx is running: `sudo systemctl status nginx`
+    
+    2. **Server block not found errors:**
+       - Make sure your nginx config has the correct `server_name` directive
+       - Server name must exactly match the domain you're requesting the cert for
+       - After fixing, run: `sudo certbot install --cert-name your-domain.com`
+    
+    3. **Permission errors:**
+       - Check ownership of nginx directories: `ls -la /etc/nginx/`
+       - Ensure you're running certbot with sudo
 
 13. **Test your deployment**:
     ```bash
