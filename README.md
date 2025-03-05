@@ -153,6 +153,38 @@ node dist/index.js check-approvals
 npm run check-approvals
 ```
 
+#### Data Storage
+
+The application stores posts and their approval status in a JSON file:
+
+```
+~/.x_ai_chatbot/posts.json
+```
+
+This file contains all posts created by the system, including:
+- Draft posts
+- Pending approval posts
+- Approved posts
+- Rejected posts
+- Published posts
+
+If you need to reset the system or clear out old posts, you can:
+
+```bash
+# View the current posts file
+cat ~/.x_ai_chatbot/posts.json
+
+# Make a backup before modifying
+cp ~/.x_ai_chatbot/posts.json ~/.x_ai_chatbot/posts.json.bak
+
+# Delete or clear the posts file to start fresh
+rm ~/.x_ai_chatbot/posts.json  # Delete
+# OR
+echo "[]" > ~/.x_ai_chatbot/posts.json  # Reset to empty array
+```
+
+The application will recreate the file automatically if it doesn't exist.
+
 #### Troubleshooting Port Conflicts
 
 If you see an error like `Error: listen EADDRINUSE: address already in use :::3000`, it means:
