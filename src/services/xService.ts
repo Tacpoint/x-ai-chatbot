@@ -43,6 +43,13 @@ export class XService {
       // Upload media if any
       const mediaIds: string[] = [];
       if (content.media && content.media.length > 0) {
+        console.log(`Media found in content (${content.media.length} items), but skipping upload due to API limitations`);
+        console.log(`To enable media uploads, upgrade to Twitter API Basic tier ($100/month)`);
+        
+        // The following code is kept but commented out for future use
+        // when API access is upgraded
+        
+        /*
         for (const media of content.media) {
           if (media.data) {
             console.log(`Uploading media of type: ${media.type}, buffer: ${media.data ? 'exists' : 'undefined'}`);
@@ -84,10 +91,15 @@ export class XService {
             console.log(`Media URL provided: ${media.url} - would need to download first`);
           }
         }
+        */
       }
 
       // Create the tweet with proper structure according to API
       if (mediaIds.length > 0) {
+        // Media upload is currently disabled due to API tier limitations
+        // This code is kept for future use when API access is upgraded
+        
+        /*
         // With media - convert to the specific tuple type expected by the API
         // Twitter allows max 4 media items
         const mediaIdsArray = mediaIds.slice(0, 4);
@@ -118,6 +130,13 @@ export class XService {
         
         console.log(`Post with media created with ID: ${response.data.id}`);
         return response.data.id;
+        */
+        
+        // Until API access is upgraded, just post text content
+        console.log("Media upload disabled - posting text content only");
+        const response = await this.client.v2.tweet(content.text);
+        console.log(`Text-only post created with ID: ${response.data.id}`);
+        return response.data.id;
       } else if (content.poll) {
         // With poll
         // Note: Twitter API v2 structures polls differently, this is a simplified implementation
@@ -145,6 +164,13 @@ export class XService {
       // Upload media if any
       const mediaIds: string[] = [];
       if (reply.media && reply.media.length > 0) {
+        console.log(`Media found in reply (${reply.media.length} items), but skipping upload due to API limitations`);
+        console.log(`To enable media uploads, upgrade to Twitter API Basic tier ($100/month)`);
+        
+        // The following code is kept but commented out for future use
+        // when API access is upgraded
+        
+        /*
         for (const media of reply.media) {
           if (media.data) {
             console.log(`Uploading media for reply, type: ${media.type}, buffer: ${media.data ? 'exists' : 'undefined'}`);
@@ -185,10 +211,15 @@ export class XService {
             console.log(`Media URL provided: ${media.url} - would need to download first`);
           }
         }
+        */
       }
 
       // Create the reply with proper structure according to API
       if (mediaIds.length > 0) {
+        // Media upload is currently disabled due to API tier limitations
+        // This code is kept for future use when API access is upgraded
+        
+        /*
         // With media - convert to the specific tuple type expected by the API
         const mediaIdsArray = mediaIds.slice(0, 4);
         
@@ -217,6 +248,13 @@ export class XService {
         });
         
         console.log(`Reply with media created with ID: ${response.data.id} to tweet ${reply.inReplyToId}`);
+        return response.data.id;
+        */
+        
+        // Until API access is upgraded, just post text reply
+        console.log("Media upload disabled - posting text reply only");
+        const response = await this.client.v2.reply(reply.text, reply.inReplyToId);
+        console.log(`Text-only reply created with ID: ${response.data.id} to tweet ${reply.inReplyToId}`);
         return response.data.id;
       } else {
         // Text only
