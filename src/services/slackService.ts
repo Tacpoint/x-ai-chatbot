@@ -97,7 +97,7 @@ export class SlackService {
       const approvalId = uuidv4();
       
       // Create blocks for Slack message with the post content and buttons
-      const blocks = this.createApprovalBlocks(post, approvalId);
+      const blocks = await this.createApprovalBlocks(post, approvalId);
       
       // Send message to the approval channel
       const result = await this.client.chat.postMessage({
@@ -129,11 +129,11 @@ export class SlackService {
     }
   }
 
-  private createApprovalBlocks(post: {
+  private async createApprovalBlocks(post: {
     text: string;
     media?: Media[];
     poll?: Poll;
-  }, approvalId: string): any[] {
+  }, approvalId: string): Promise<any[]> {
     const blocks: any[] = [
       {
         type: 'section',
@@ -151,7 +151,7 @@ export class SlackService {
       }
     ];
     
-    // Add media info if present
+    // Add media info and images if present
     if (post.media && post.media.length > 0) {
       blocks.push({
         type: 'section',
@@ -160,6 +160,38 @@ export class SlackService {
           text: `*Includes media:* ${post.media.length} item${post.media.length > 1 ? 's' : ''}`,
         },
       });
+      
+      // Try to upload and display each media item
+      for (const media of post.media) {
+        if (media.data && Buffer.isBuffer(media.data)) {
+          try {
+            // Upload the image to Slack
+            const uploadResult = await this.client.files.upload({
+              channels: config.slack.approvalChannel,
+              file: media.data,
+              filename: `image_${Date.now()}.png`,
+              filetype: 'png',
+              title: media.altText || 'Post image'
+            });
+            
+            if (uploadResult.file && uploadResult.file.url_private) {
+              // Add the image block
+              blocks.push({
+                type: 'image',
+                title: {
+                  type: 'plain_text',
+                  text: media.altText || 'Post image',
+                },
+                image_url: uploadResult.file.url_private,
+                alt_text: media.altText || 'Post image'
+              });
+            }
+          } catch (uploadError) {
+            console.error('Error uploading media to Slack:', uploadError);
+            // Continue without the image
+          }
+        }
+      }
     }
     
     // Add poll info if present
@@ -268,27 +300,44 @@ export class SlackService {
           console.log(`Note: Post loaded from storage doesn't have message timestamp. Skipping Slack message update.`);
         } else {
           try {
-            // Update the message to show it was approved
+            // Create updated blocks including the media if present
+            const approvedBlocks = [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*Content approved by <@${payload.user.id}>*`,
+                },
+              },
+              {
+                type: 'section',
+                text: {
+                  type: 'plain_text',
+                  text: post.content.text,
+                },
+              },
+            ];
+            
+            // Add media back if present
+            if (post.content.media && post.content.media.length > 0) {
+              approvedBlocks.push({
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*Includes media:* ${post.content.media.length} item${post.content.media.length > 1 ? 's' : ''}`,
+                },
+              });
+              
+              // Preserve any previously uploaded images
+              // Files can't be re-added programmatically, but at least we show the text
+            }
+            
+            // Update the message with approved status and content
             await this.client.chat.update({
               channel: payload.channel.id,
               ts: post.messageTs,
               text: `Content approved: "${post.content.text.substring(0, 50)}${post.content.text.length > 50 ? '...' : ''}"`,
-              blocks: [
-                {
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: `*Content approved by <@${payload.user.id}>*`,
-                  },
-                },
-                {
-                  type: 'section',
-                  text: {
-                    type: 'plain_text',
-                    text: post.content.text,
-                  },
-                },
-              ],
+              blocks: approvedBlocks,
             });
             console.log('Successfully updated Slack message after approval');
           } catch (updateError) {
@@ -322,27 +371,44 @@ export class SlackService {
           console.log(`Note: Post loaded from storage doesn't have message timestamp. Skipping Slack message update.`);
         } else {
           try {
+            // Create updated blocks including the media if present
+            const rejectedBlocks = [
+              {
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*Content rejected by <@${payload.user.id}>*`,
+                },
+              },
+              {
+                type: 'section',
+                text: {
+                  type: 'plain_text',
+                  text: post.content.text,
+                },
+              },
+            ];
+            
+            // Add media back if present
+            if (post.content.media && post.content.media.length > 0) {
+              rejectedBlocks.push({
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `*Includes media:* ${post.content.media.length} item${post.content.media.length > 1 ? 's' : ''}`,
+                },
+              });
+              
+              // Preserve any previously uploaded images
+              // Files can't be re-added programmatically, but at least we show the text
+            }
+            
             // Update the message to show it was rejected
             await this.client.chat.update({
               channel: payload.channel.id,
               ts: post.messageTs,
               text: `Content rejected: "${post.content.text.substring(0, 50)}${post.content.text.length > 50 ? '...' : ''}"`,
-              blocks: [
-                {
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: `*Content rejected by <@${payload.user.id}>*`,
-                  },
-                },
-                {
-                  type: 'section',
-                  text: {
-                    type: 'plain_text',
-                    text: post.content.text,
-                  },
-                },
-              ],
+              blocks: rejectedBlocks,
             });
             console.log('Successfully updated Slack message after rejection');
           } catch (updateError) {
@@ -456,7 +522,7 @@ export class SlackService {
       this.pendingApprovals.set(approvalId, updatedPost);
       
       // Update the original message with the new content
-      const blocks = this.createApprovalBlocks(updatedPost.content, approvalId);
+      const blocks = await this.createApprovalBlocks(updatedPost.content, approvalId);
       
       await this.client.chat.update({
         channel: config.slack.approvalChannel,
