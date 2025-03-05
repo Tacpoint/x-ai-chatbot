@@ -172,49 +172,83 @@ export class SlackService {
             
             const fileExtension = `.${fileType}`;
             
-            // Upload the image to Slack using the recommended uploadV2 method
-            // Cast response to any since the type definitions may not be up to date
-            const uploadResult = await this.client.files.uploadV2({
-              channel_id: config.slack.approvalChannel,
-              file: media.data,
-              filename: `media_${Date.now()}${fileExtension}`,
-              title: media.altText || `Post ${media.type}`,
-              initial_comment: `Preview of ${media.type} for post approval`
-            }) as any;
-            
-            // Check for file properties in the response
-            // uploadV2 response has different structure than the old method
-            const fileInfo = uploadResult.files && uploadResult.files[0];
-            if (fileInfo && fileInfo.url_private) {
-              // Log information for debugging
-              console.log(`File uploaded successfully: ${fileInfo.id}, type: ${fileInfo.mimetype}`);
+            // First, ensure we have a valid channel ID for file upload
+            // This lookup ensures we have the correct ID format Slack expects
+            try {
+              // Lookup the channel ID for the approval channel
+              const channelsResponse = await this.client.conversations.list({
+                types: 'public_channel,private_channel'
+              });
               
-              // For images, add an image block
-              if (media.type === 'image' || media.type === 'gif') {
-                blocks.push({
-                  type: 'image',
-                  title: {
-                    type: 'plain_text',
-                    text: media.altText || `Post ${media.type}`,
-                  },
-                  image_url: fileInfo.url_private,
-                  alt_text: media.altText || `Post ${media.type}`
-                });
+              // Find the channel by name
+              const channelInfo = channelsResponse.channels?.find(
+                (c: any) => c.name === config.slack.approvalChannel.replace('#', '')
+              );
+              
+              // Get the channel ID
+              const channelId = channelInfo?.id || config.slack.approvalChannel;
+              
+              // Log the channel being used
+              console.log(`Attempting to upload media to channel: ${config.slack.approvalChannel}, resolved ID: ${channelId}`);
+              
+              // Upload the image to Slack using the recommended uploadV2 method
+              // Cast response to any since the type definitions may not be up to date
+              const uploadResult = await this.client.files.uploadV2({
+                // The files.uploadV2 needs a channel ID, not a channel name
+                channel_id: channelId,
+                file: media.data,
+                filename: `media_${Date.now()}${fileExtension}`,
+                title: media.altText || `Post ${media.type}`,
+                initial_comment: `Preview of ${media.type} for post approval`
+              }) as any;
+            
+              // Check for file properties in the response
+              // uploadV2 response has different structure than the old method
+              const fileInfo = uploadResult.files && uploadResult.files[0];
+              if (fileInfo && fileInfo.url_private) {
+                // Log information for debugging
+                console.log(`File uploaded successfully: ${fileInfo.id}, type: ${fileInfo.mimetype}`);
+                
+                // For images, add an image block
+                if (media.type === 'image' || media.type === 'gif') {
+                  blocks.push({
+                    type: 'image',
+                    title: {
+                      type: 'plain_text',
+                      text: media.altText || `Post ${media.type}`,
+                    },
+                    image_url: fileInfo.url_private,
+                    alt_text: media.altText || `Post ${media.type}`
+                  });
+                } else {
+                  // For videos or other media types, add a link
+                  blocks.push({
+                    type: 'section',
+                    text: {
+                      type: 'mrkdwn',
+                      text: `*<${fileInfo.permalink}|Click to view ${media.type}>*`
+                    }
+                  });
+                }
               } else {
-                // For videos or other media types, add a link
-                blocks.push({
-                  type: 'section',
-                  text: {
-                    type: 'mrkdwn',
-                    text: `*<${fileInfo.permalink}|Click to view ${media.type}>*`
-                  }
-                });
+                console.warn('File uploaded but URL not available in response', JSON.stringify(uploadResult));
               }
-            } else {
-              console.warn('File uploaded but URL not available in response', uploadResult);
+            } catch (uploadError: any) {
+              console.error('Error uploading media to Slack:', uploadError);
+              
+              // Add a note about the missing media in the message
+              blocks.push({
+                type: 'section',
+                text: {
+                  type: 'mrkdwn',
+                  text: `_Note: Media could not be uploaded for preview. (Error: ${uploadError.message || 'Unknown error'})_`
+                }
+              });
+              
+              // Continue without the image
             }
-          } catch (uploadError) {
-            console.error('Error uploading media to Slack:', uploadError);
+          } catch (error) {
+            console.error('Unhandled error in media processing:', error);
             // Continue without the image
           }
         }
