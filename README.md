@@ -71,25 +71,46 @@ REQUIRE_APPROVAL=true       # Whether posts need to be approved
 
 ## Usage
 
-### Start the Chatbot
+### Running the Chatbot
 
-To start the chatbot with scheduled posting and mention monitoring:
+The application has two main modes of operation:
+1. **Server mode** - runs continuously to handle scheduled tasks and webhook callbacks
+2. **Command mode** - runs once to perform a specific task and exits
+
+#### Server Mode (Persistent Process)
+
+In a production environment, you should use PM2 to manage the server process:
 
 ```bash
-npm run dev
+# Install PM2 if not already installed
+npm install -g pm2
+
+# Start the server process (only do this ONCE)
+pm2 start dist/index.js --name x-chatbot -- start
+
+# Check the logs
+pm2 logs x-chatbot
+
+# Make PM2 restart the server on system boot
+pm2 startup
+pm2 save
 ```
 
-or in production:
+This persistent process:
+- Handles scheduled posting
+- Checks for mentions regularly
+- Listens for webhook callbacks from Slack
+- Processes approvals
 
-```bash
-npm start
-```
-
-### Create a Single Post
+#### Creating a Single Post
 
 To create a post without waiting for the scheduler:
 
 ```bash
+# Using the compiled JavaScript (recommended in production)
+node dist/index.js post --topic "Web development tips" --media
+
+# Or using npm in development
 npm run post -- --topic "Web development tips" --media
 ```
 
@@ -97,26 +118,51 @@ Options:
 - `--topic`: The topic for the post (default: "software development and design")
 - `--media`: Include an image with the post (flag)
 - `--poll`: Include a poll with the post (flag)
+- `--server`: Start webhook server to handle approval callbacks (not needed if server is already running)
 
 If approval is enabled, the post will be sent to Slack for review before publishing.
 
-### Check Mentions Manually
+> **IMPORTANT**: If you have approvals enabled, you must have a server process running (using the `start` command) to handle the approval callbacks from Slack.
+
+#### Check Mentions Manually
 
 To check for new mentions and reply if appropriate:
 
 ```bash
+# Using the compiled JavaScript (recommended in production)
+node dist/index.js check-mentions
+
+# Or using npm in development
 npm run check-mentions
 ```
 
+Options:
+- `--server`: Start webhook server to handle approval callbacks (not needed if server is already running)
+
 If approval is enabled, any generated replies will be sent to Slack for review before publishing.
 
-### Check Pending Approvals
+#### Check Pending Approvals
 
 To manually check and process any pending approvals:
 
 ```bash
+# Using the compiled JavaScript (recommended in production)
+node dist/index.js check-approvals
+
+# Or using npm in development
 npm run check-approvals
 ```
+
+#### Troubleshooting Port Conflicts
+
+If you see an error like `Error: listen EADDRINUSE: address already in use :::3000`, it means:
+1. You already have a server process running on port 3000
+2. You're trying to start another server
+
+Solutions:
+- Use the existing server process for approvals
+- Don't use the `--server` flag when running post commands
+- If you need to restart the server, first stop it with `pm2 stop x-chatbot`
 
 ## Slack Integration
 
