@@ -258,28 +258,40 @@ export class SlackService {
       }
       
       if (actionId === 'approve_post') {
-        // Update the message to show it was approved
-        await this.client.chat.update({
-          channel: payload.channel.id,
-          ts: post.messageTs!,
-          text: `Content approved: "${post.content.text.substring(0, 50)}${post.content.text.length > 50 ? '...' : ''}"`,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `*Content approved by <@${payload.user.id}>*`,
-              },
-            },
-            {
-              type: 'section',
-              text: {
-                type: 'plain_text',
-                text: post.content.text,
-              },
-            },
-          ],
-        });
+        // If loaded from storage, post may not have messageTs
+        if (!post.messageTs) {
+          console.log(`Note: Post loaded from storage doesn't have message timestamp. Skipping Slack message update.`);
+        } else {
+          try {
+            // Update the message to show it was approved
+            await this.client.chat.update({
+              channel: payload.channel.id,
+              ts: post.messageTs,
+              text: `Content approved: "${post.content.text.substring(0, 50)}${post.content.text.length > 50 ? '...' : ''}"`,
+              blocks: [
+                {
+                  type: 'section',
+                  text: {
+                    type: 'mrkdwn',
+                    text: `*Content approved by <@${payload.user.id}>*`,
+                  },
+                },
+                {
+                  type: 'section',
+                  text: {
+                    type: 'plain_text',
+                    text: post.content.text,
+                  },
+                },
+              ],
+            });
+            console.log('Successfully updated Slack message after approval');
+          } catch (updateError) {
+            console.error('Error updating Slack message:', updateError);
+            console.log('Continuing with approval process despite message update error');
+            // Continue with approval process even if message update fails
+          }
+        }
         
         // Update our local state
         post.status = 'approved';
@@ -291,28 +303,40 @@ export class SlackService {
           content: post.content,
         };
       } else if (actionId === 'reject_post') {
-        // Update the message to show it was rejected
-        await this.client.chat.update({
-          channel: payload.channel.id,
-          ts: post.messageTs!,
-          text: `Content rejected: "${post.content.text.substring(0, 50)}${post.content.text.length > 50 ? '...' : ''}"`,
-          blocks: [
-            {
-              type: 'section',
-              text: {
-                type: 'mrkdwn',
-                text: `*Content rejected by <@${payload.user.id}>*`,
-              },
-            },
-            {
-              type: 'section',
-              text: {
-                type: 'plain_text',
-                text: post.content.text,
-              },
-            },
-          ],
-        });
+        // If loaded from storage, post may not have messageTs
+        if (!post.messageTs) {
+          console.log(`Note: Post loaded from storage doesn't have message timestamp. Skipping Slack message update.`);
+        } else {
+          try {
+            // Update the message to show it was rejected
+            await this.client.chat.update({
+              channel: payload.channel.id,
+              ts: post.messageTs,
+              text: `Content rejected: "${post.content.text.substring(0, 50)}${post.content.text.length > 50 ? '...' : ''}"`,
+              blocks: [
+                {
+                  type: 'section',
+                  text: {
+                    type: 'mrkdwn',
+                    text: `*Content rejected by <@${payload.user.id}>*`,
+                  },
+                },
+                {
+                  type: 'section',
+                  text: {
+                    type: 'plain_text',
+                    text: post.content.text,
+                  },
+                },
+              ],
+            });
+            console.log('Successfully updated Slack message after rejection');
+          } catch (updateError) {
+            console.error('Error updating Slack message:', updateError);
+            console.log('Continuing with rejection process despite message update error');
+            // Continue with rejection process even if message update fails
+          }
+        }
         
         // Update our local state
         post.status = 'rejected';
@@ -323,38 +347,44 @@ export class SlackService {
           status: 'rejected',
         };
       } else if (actionId === 'edit_post') {
-        // Open a modal for editing
-        await this.client.views.open({
-          trigger_id: payload.trigger_id,
-          view: {
-            type: 'modal',
-            callback_id: `edit_post_${approvalId}`,
-            title: {
-              type: 'plain_text',
-              text: 'Edit Post',
-            },
-            blocks: [
-              {
-                type: 'input',
-                block_id: 'post_text',
-                label: {
-                  type: 'plain_text',
-                  text: 'Edit post content',
-                },
-                element: {
-                  type: 'plain_text_input',
-                  action_id: 'post_text_input',
-                  multiline: true,
-                  initial_value: post.content.text,
-                },
+        try {
+          // Open a modal for editing
+          await this.client.views.open({
+            trigger_id: payload.trigger_id,
+            view: {
+              type: 'modal',
+              callback_id: `edit_post_${approvalId}`,
+              title: {
+                type: 'plain_text',
+                text: 'Edit Post',
               },
-            ],
-            submit: {
-              type: 'plain_text',
-              text: 'Save Changes',
+              blocks: [
+                {
+                  type: 'input',
+                  block_id: 'post_text',
+                  label: {
+                    type: 'plain_text',
+                    text: 'Edit post content',
+                  },
+                  element: {
+                    type: 'plain_text_input',
+                    action_id: 'post_text_input',
+                    multiline: true,
+                    initial_value: post.content.text,
+                  },
+                },
+              ],
+              submit: {
+                type: 'plain_text',
+                text: 'Save Changes',
+              },
             },
-          },
-        });
+          });
+          console.log('Successfully opened edit modal');
+        } catch (modalError) {
+          console.error('Error opening edit modal:', modalError);
+          // Continue with returning pending status despite modal error
+        }
         
         // Return without changing status yet
         return {
