@@ -297,6 +297,15 @@ export class SlackService {
         post.status = 'approved';
         this.pendingApprovals.set(approvalId, post);
         
+        // Update status in persistent storage
+        try {
+          await this.postStorage.updatePostStatus(post.id, 'approved');
+          console.log(`Updated post ${post.id} status to approved in storage`);
+        } catch (error) {
+          console.error(`Error updating post status in storage:`, error);
+          // Continue with approval process even if storage update fails
+        }
+        
         return {
           approvalId,
           status: 'approved',
@@ -341,6 +350,15 @@ export class SlackService {
         // Update our local state
         post.status = 'rejected';
         this.pendingApprovals.set(approvalId, post);
+        
+        // Update status in persistent storage
+        try {
+          await this.postStorage.updatePostStatus(post.id, 'rejected');
+          console.log(`Updated post ${post.id} status to rejected in storage`);
+        } catch (error) {
+          console.error(`Error updating post status in storage:`, error);
+          // Continue with rejection process even if storage update fails
+        }
         
         return {
           approvalId,
@@ -467,9 +485,33 @@ export class SlackService {
     media?: Media[];
     poll?: Poll;
   } | null> {
-    const post = this.pendingApprovals.get(approvalId);
+    // First check in-memory store
+    let post = this.pendingApprovals.get(approvalId);
     
+    // If not found in memory or not approved, try to load from storage
     if (!post || post.status !== 'approved') {
+      console.log(`Approved content for ${approvalId} not found in memory, checking storage...`);
+      const storedPost = await this.postStorage.getPostByApprovalId(approvalId);
+      
+      if (storedPost && storedPost.status === 'approved') {
+        console.log(`Found approved post with approval ID ${approvalId} in storage`);
+        // Convert to DraftPost format and add to in-memory store
+        post = {
+          id: storedPost.id,
+          content: {
+            text: storedPost.text,
+            media: storedPost.media,
+            poll: storedPost.poll
+          },
+          timestamp: storedPost.createdAt.getTime(),
+          status: 'approved'
+        };
+        
+        // Add to in-memory store for future use
+        this.pendingApprovals.set(approvalId, post);
+        return post.content;
+      }
+      
       return null;
     }
     
