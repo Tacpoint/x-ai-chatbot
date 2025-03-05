@@ -449,26 +449,25 @@ To add new features, extend the appropriate service or create a new one in the `
 
 12. **Set up SSL with Certbot** (required for Slack webhooks):
     ```bash
-    # For Amazon Linux 2023, install Certbot via snapd:
+    # For Amazon Linux 2023, install Certbot via pip:
     
-    # Install snapd
-    sudo dnf install -y snapd
+    # Install required packages
+    sudo dnf install -y python3-pip augeas-libs
     
-    # Enable snapd service
-    sudo systemctl enable --now snapd.socket
-    sudo ln -s /var/lib/snapd/snap /snap
+    # Install Certbot via pip
+    sudo pip3 install certbot certbot-nginx
     
-    # Install certbot via snap
-    sudo snap install core
-    sudo snap refresh core
-    sudo snap install --classic certbot
-    sudo ln -s /snap/bin/certbot /usr/bin/certbot
+    # Create symbolic link (may not be necessary if certbot is already in path)
+    sudo ln -s /usr/local/bin/certbot /usr/bin/certbot
     
-    # Get SSL certificate
+    # Get SSL certificate (replace with your actual domain)
     sudo certbot --nginx -d your-domain.com
     
-    # Automatic renewal
+    # Automatic renewal test
     sudo certbot renew --dry-run
+    
+    # Note: You can ignore warnings about dependency conflicts with awscli
+    # as long as certbot installs successfully
     ```
 
 13. **Test your deployment**:
