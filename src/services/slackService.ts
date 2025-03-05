@@ -398,6 +398,8 @@ export class SlackService {
           console.log(`Note: Post loaded from storage doesn't have message timestamp. Skipping Slack message update.`);
         } else {
           try {
+            console.log(`Attempting to update Slack message for rejection. MessageTs: ${post.messageTs}, Channel: ${payload.channel.id}`);
+            
             // Create updated blocks including the media if present
             const rejectedBlocks = [
               {
@@ -431,12 +433,14 @@ export class SlackService {
             }
             
             // Update the message to show it was rejected
-            await this.client.chat.update({
+            const updateResult = await this.client.chat.update({
               channel: payload.channel.id,
               ts: post.messageTs,
               text: `Content rejected: "${post.content.text.substring(0, 50)}${post.content.text.length > 50 ? '...' : ''}"`,
               blocks: rejectedBlocks,
             });
+            
+            console.log(`Slack message update result for rejection:`, JSON.stringify(updateResult));
             console.log('Successfully updated Slack message after rejection');
           } catch (updateError) {
             console.error('Error updating Slack message:', updateError);
@@ -457,6 +461,16 @@ export class SlackService {
           console.error(`Error updating post status in storage:`, error);
           // Continue with rejection process even if storage update fails
         }
+        
+        // Log the entire payload for debugging
+        console.log(`Rejection payload:`, JSON.stringify({
+          actionId,
+          approvalId,
+          channelId: payload.channel ? payload.channel.id : 'unknown',
+          userId: payload.user ? payload.user.id : 'unknown',
+          messageTs: post.messageTs,
+          hasPost: post ? 'yes' : 'no'
+        }));
         
         return {
           approvalId,
