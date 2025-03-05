@@ -465,6 +465,25 @@ export class SlackService {
         blocks,
       });
       
+      // Update content in storage as well
+      try {
+        // Get the post from storage to ensure we have the correct ID
+        const storedPost = await this.postStorage.getPostByApprovalId(approvalId);
+        
+        if (storedPost) {
+          console.log(`Updating edited post ${storedPost.id} content in storage`);
+          // Only update the text content in storage
+          await this.postStorage.updatePostContent(storedPost.id, {
+            text: newText
+          });
+        } else {
+          console.warn(`Could not find post with approval ID ${approvalId} in storage to update edited content`);
+        }
+      } catch (storageError) {
+        console.error('Error updating edited post content in storage:', storageError);
+        // Continue despite storage error - we still have the update in memory
+      }
+      
       return {
         approvalId,
         content: updatedPost.content,
