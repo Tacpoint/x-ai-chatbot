@@ -64,8 +64,8 @@ export class SlackService {
               poll: post.poll
             },
             timestamp: post.createdAt.getTime(),
-            status: 'pending'
-            // Note: messageTs is missing, but not required for approval processing
+            status: 'pending',
+            messageTs: post.messageTs // Include the messageTs if available
           });
         }
       }
@@ -91,7 +91,7 @@ export class SlackService {
     text: string;
     media?: Media[];
     poll?: Poll;
-  }, postId?: string): Promise<string> {
+  }, postId?: string): Promise<{ approvalId: string; messageTs: string }> {
     try {
       // Generate a unique ID for this approval request
       const approvalId = uuidv4();
@@ -106,18 +106,23 @@ export class SlackService {
         blocks,
       });
       
+      const messageTs = result.ts as string;
+      
       // Store this pending approval
       this.pendingApprovals.set(approvalId, {
         id: postId || approvalId, // Use the post ID if provided, otherwise use approval ID
         content: post,
         timestamp: Date.now(),
         status: 'pending',
-        messageTs: result.ts as string,
+        messageTs: messageTs,
       });
       
       console.log(`Created approval request ${approvalId} for post ID: ${postId || 'unknown'}`);
       
-      return approvalId;
+      return { 
+        approvalId,
+        messageTs
+      };
     } catch (error) {
       console.error('Error requesting Slack approval:', error);
       throw new Error('Failed to request approval');

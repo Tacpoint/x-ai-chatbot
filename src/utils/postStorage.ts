@@ -11,6 +11,7 @@ interface StoredPost {
   createdAt: string;
   status: 'draft' | 'pending' | 'approved' | 'rejected' | 'published';
   approvalId?: string;
+  messageTs?: string; // Slack message timestamp for updating
 }
 
 export class PostStorage {
@@ -45,6 +46,7 @@ export class PostStorage {
     media?: Media[];
     poll?: Poll;
     approvalId?: string;
+    messageTs?: string;
   }): Promise<void> {
     try {
       const posts = await this.getAllPosts();
@@ -57,6 +59,7 @@ export class PostStorage {
         createdAt: new Date().toISOString(),
         status: 'draft',
         approvalId: post.approvalId,
+        messageTs: post.messageTs,
       };
       
       posts.push(storedPost);
@@ -71,7 +74,8 @@ export class PostStorage {
   async updatePostStatus(
     id: string,
     status: 'draft' | 'pending' | 'approved' | 'rejected' | 'published',
-    approvalId?: string
+    approvalId?: string,
+    messageTs?: string
   ): Promise<void> {
     try {
       const posts = await this.getAllPosts();
@@ -85,6 +89,10 @@ export class PostStorage {
       
       if (approvalId) {
         posts[postIndex].approvalId = approvalId;
+      }
+      
+      if (messageTs) {
+        posts[postIndex].messageTs = messageTs;
       }
       
       await fs.writeFile(this.POSTS_FILE, JSON.stringify(posts, null, 2));
@@ -161,6 +169,7 @@ export class PostStorage {
         createdAt: new Date(post.createdAt),
         status: post.status,
         approvalId: post.approvalId,
+        messageTs: post.messageTs,
       };
     } catch (error) {
       console.error('Error getting post by ID:', error);
@@ -200,6 +209,7 @@ export class PostStorage {
         createdAt: new Date(post.createdAt),
         status: post.status,
         approvalId: post.approvalId,
+        messageTs: post.messageTs,
       };
     } catch (error) {
       console.error('Error getting post by approval ID:', error);
@@ -237,6 +247,7 @@ export class PostStorage {
             createdAt: new Date(p.createdAt),
             status: p.status,
             approvalId: p.approvalId,
+            messageTs: p.messageTs,
           };
         });
     } catch (error) {
@@ -275,6 +286,7 @@ export class PostStorage {
             createdAt: new Date(p.createdAt),
             status: p.status,
             approvalId: p.approvalId,
+            messageTs: p.messageTs,
           };
         });
     } catch (error) {

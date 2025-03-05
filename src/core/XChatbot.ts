@@ -113,10 +113,10 @@ export class XChatbot {
       });
       
       // Request approval via Slack - pass the post ID to maintain ID consistency
-      const approvalId = await this.slackService.requestApproval(content, postId);
+      const { approvalId, messageTs } = await this.slackService.requestApproval(content, postId);
       
-      // Update the post with the approval ID
-      await this.postStorage.updatePostStatus(postId, 'pending', approvalId);
+      // Update the post with the approval ID and message timestamp
+      await this.postStorage.updatePostStatus(postId, 'pending', approvalId, messageTs);
       
       console.log(`Created scheduled post with ID: ${postId} (pending approval: ${approvalId})`);
       return postId;
@@ -169,10 +169,10 @@ export class XChatbot {
       });
       
       // Request approval via Slack - pass the post ID to maintain ID consistency
-      const approvalId = await this.slackService.requestApproval(content, postId);
+      const { approvalId, messageTs } = await this.slackService.requestApproval(content, postId);
       
-      // Update the post with the approval ID
-      await this.postStorage.updatePostStatus(postId, 'pending', approvalId);
+      // Update the post with the approval ID and message timestamp
+      await this.postStorage.updatePostStatus(postId, 'pending', approvalId, messageTs);
       
       console.log(`Created custom post with ID: ${postId} (pending approval: ${approvalId})`);
       return postId;
@@ -301,7 +301,7 @@ export class XChatbot {
           });
           
           // Request approval via Slack
-          const approvalId = await this.slackService.requestApproval({
+          const { approvalId, messageTs } = await this.slackService.requestApproval({
             text: `REPLY to @mention: ${replyText}`
           });
           
@@ -312,7 +312,7 @@ export class XChatbot {
               inReplyToId: mention.id
             })
           });
-          await this.postStorage.updatePostStatus(replyId, 'pending', approvalId);
+          await this.postStorage.updatePostStatus(replyId, 'pending', approvalId, messageTs);
           
           console.log(`Created reply to mention ${mention.id} (pending approval: ${approvalId})`);
         } else {

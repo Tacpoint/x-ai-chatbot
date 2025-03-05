@@ -6,6 +6,7 @@ export interface Post {
   createdAt: Date;
   status?: 'draft' | 'pending' | 'approved' | 'rejected' | 'published';
   approvalId?: string;
+  messageTs?: string; // Slack message timestamp for updating
 }
 
 export interface Reply {
