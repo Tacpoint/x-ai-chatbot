@@ -92,10 +92,15 @@ export class PostStorage {
       }
       
       if (messageTs) {
+        console.log(`Storing messageTs ${messageTs} for post ${id}`);
         posts[postIndex].messageTs = messageTs;
       }
       
       await fs.writeFile(this.POSTS_FILE, JSON.stringify(posts, null, 2));
+      
+      // Debug: verify what was written
+      const updatedPost = posts[postIndex];
+      console.log(`Post ${id} updated with status: ${status}, approvalId: ${updatedPost.approvalId}, messageTs: ${updatedPost.messageTs}`);
     } catch (error) {
       console.error('Error updating post status:', error);
       throw new Error('Failed to update post status');

@@ -115,6 +115,9 @@ export class XChatbot {
       // Request approval via Slack - pass the post ID to maintain ID consistency
       const { approvalId, messageTs } = await this.slackService.requestApproval(content, postId);
       
+      // Log the message timestamp for debugging
+      console.log(`Received messageTs: ${messageTs} for approval ID: ${approvalId}`);
+      
       // Update the post with the approval ID and message timestamp
       await this.postStorage.updatePostStatus(postId, 'pending', approvalId, messageTs);
       
@@ -170,6 +173,9 @@ export class XChatbot {
       
       // Request approval via Slack - pass the post ID to maintain ID consistency
       const { approvalId, messageTs } = await this.slackService.requestApproval(content, postId);
+      
+      // Log the message timestamp for debugging
+      console.log(`Received messageTs: ${messageTs} for approval ID: ${approvalId}`);
       
       // Update the post with the approval ID and message timestamp
       await this.postStorage.updatePostStatus(postId, 'pending', approvalId, messageTs);

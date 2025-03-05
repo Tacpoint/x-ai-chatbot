@@ -332,7 +332,7 @@ export class SlackService {
         const storedPost = await this.postStorage.getPostByApprovalId(approvalId);
         
         if (storedPost && storedPost.approvalId) {
-          console.log(`Found post with approval ID ${approvalId} in storage`);
+          console.log(`Found post with approval ID ${approvalId} in storage. MessageTs: ${storedPost.messageTs || 'not set'}`);
           // Convert to DraftPost format and add to in-memory store
           post = {
             id: storedPost.id, // Use the post ID, not the approval ID
@@ -342,7 +342,8 @@ export class SlackService {
               poll: storedPost.poll
             },
             timestamp: storedPost.createdAt.getTime(),
-            status: 'pending'
+            status: 'pending',
+            messageTs: storedPost.messageTs // Preserve the message timestamp from storage
           };
           
           // Add to in-memory store for future use
