@@ -3,6 +3,7 @@ import { IncomingWebhook } from '@slack/webhook';
 import config from '../config/config';
 import { Media, Poll, Post } from '../core/types';
 import { v4 as uuidv4 } from 'uuid';
+import { PostStorage } from '../utils/postStorage';
 
 interface DraftPost {
   id: string;
@@ -20,11 +21,58 @@ export class SlackService {
   private webhook: IncomingWebhook;
   private client: WebClient;
   private pendingApprovals: Map<string, DraftPost>;
+  private postStorage: PostStorage;
 
   constructor() {
     this.webhook = new IncomingWebhook(config.slack.webhookUrl);
     this.client = new WebClient(config.slack.apiToken);
     this.pendingApprovals = new Map<string, DraftPost>();
+    this.postStorage = new PostStorage();
+    
+    // Initialize storage and load pending approvals
+    this.initialize();
+  }
+  
+  private async initialize(): Promise<void> {
+    try {
+      // Initialize the storage
+      await this.postStorage.initialize();
+      
+      // Load pending posts from storage
+      console.log('Loading pending approvals from storage...');
+      await this.loadPendingApprovalsFromStorage();
+    } catch (error) {
+      console.error('Error initializing SlackService:', error);
+    }
+  }
+  
+  private async loadPendingApprovalsFromStorage(): Promise<void> {
+    try {
+      const pendingPosts = await this.postStorage.getPendingPosts();
+      
+      for (const post of pendingPosts) {
+        if (post.approvalId) {
+          console.log(`Loading pending approval ${post.approvalId} for post ${post.id}`);
+          
+          // Convert from Post to DraftPost format
+          this.pendingApprovals.set(post.approvalId, {
+            id: post.approvalId,
+            content: {
+              text: post.text,
+              media: post.media,
+              poll: post.poll
+            },
+            timestamp: post.createdAt.getTime(),
+            status: 'pending'
+            // Note: messageTs is missing, but not required for approval processing
+          });
+        }
+      }
+      
+      console.log(`Loaded ${this.pendingApprovals.size} pending approvals from storage`);
+    } catch (error) {
+      console.error('Error loading pending approvals from storage:', error);
+    }
   }
 
   async notifyNewContent(message: string): Promise<void> {
@@ -174,8 +222,34 @@ export class SlackService {
       const actionId = payload.actions[0].action_id;
       const approvalId = payload.actions[0].value;
       
-      const post = this.pendingApprovals.get(approvalId);
+      // First check in-memory store
+      let post = this.pendingApprovals.get(approvalId);
       
+      // If not found in memory, try to load from storage
+      if (!post) {
+        console.log(`Approval ${approvalId} not found in memory, checking storage...`);
+        const storedPost = await this.postStorage.getPostByApprovalId(approvalId);
+        
+        if (storedPost && storedPost.approvalId) {
+          console.log(`Found post with approval ID ${approvalId} in storage`);
+          // Convert to DraftPost format and add to in-memory store
+          post = {
+            id: approvalId,
+            content: {
+              text: storedPost.text,
+              media: storedPost.media,
+              poll: storedPost.poll
+            },
+            timestamp: storedPost.createdAt.getTime(),
+            status: 'pending'
+          };
+          
+          // Add to in-memory store for future use
+          this.pendingApprovals.set(approvalId, post);
+        }
+      }
+      
+      // If still not found, then it's truly missing
       if (!post) {
         throw new Error(`No pending approval found with ID: ${approvalId}`);
       }
