@@ -233,6 +233,8 @@ Under "Basic Information":
    - `users:read` (View basic user info)
    - `groups:read` (Access private channels for media uploads)
    - `views:write` (Create and modify modal dialogs)
+   
+   > **IMPORTANT**: The `groups:read` permission is required for uploading media to private channels. Without this permission, you'll see `channel_not_found` errors when uploading media.
 
 3. Click "Install to Workspace" and authorize the app
 4. Copy the "Bot User OAuth Token" (for your `.env` file as `SLACK_API_TOKEN`)

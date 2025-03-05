@@ -175,18 +175,51 @@ export class SlackService {
             // First, ensure we have a valid channel ID for file upload
             // This lookup ensures we have the correct ID format Slack expects
             try {
-              // Lookup the channel ID for the approval channel
-              const channelsResponse = await this.client.conversations.list({
-                types: 'public_channel,private_channel'
-              });
+              // Get the channel ID from the Slack API
+              // First try conversations.info with the channel name
+              let channelId;
               
-              // Find the channel by name
-              const channelInfo = channelsResponse.channels?.find(
-                (c: any) => c.name === config.slack.approvalChannel.replace('#', '')
-              );
+              try {
+                // Try to get channel directly by ID first (if it's already an ID)
+                if (config.slack.approvalChannel.startsWith('C')) {
+                  channelId = config.slack.approvalChannel;
+                } else {
+                  // Lookup the channel ID for the approval channel
+                  const channelName = config.slack.approvalChannel.replace('#', '');
+                  
+                  // First try public channels
+                  const channelsResponse = await this.client.conversations.list({
+                    types: 'public_channel'
+                  });
+                  
+                  // Find the channel by name
+                  let channelInfo = channelsResponse.channels?.find(
+                    (c: any) => c.name === channelName
+                  );
+                  
+                  if (!channelInfo) {
+                    // If not found in public channels, try private channels
+                    const privateChannelsResponse = await this.client.conversations.list({
+                      types: 'private_channel'
+                    });
+                    
+                    channelInfo = privateChannelsResponse.channels?.find(
+                      (c: any) => c.name === channelName
+                    );
+                  }
+                  
+                  // Get the channel ID
+                  channelId = channelInfo?.id;
+                }
+              } catch (channelLookupError) {
+                console.error('Error looking up channel:', channelLookupError);
+                // Fallback to using the channel name directly
+                channelId = config.slack.approvalChannel;
+              }
               
-              // Get the channel ID
-              const channelId = channelInfo?.id || config.slack.approvalChannel;
+              if (!channelId) {
+                throw new Error(`Could not resolve channel ID for: ${config.slack.approvalChannel}`);
+              }
               
               // Log the channel being used
               console.log(`Attempting to upload media to channel: ${config.slack.approvalChannel}, resolved ID: ${channelId}`);
